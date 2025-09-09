@@ -1,0 +1,10 @@
+## Branding options for the acronym "GOB" (nano)
+expansions = [
+  "General Operations Bot",
+  "Global Orchestration Bridge",
+  "Generalized Orchestration Brain",
+  "Guided Operations Backend",
+  "Graph-Oriented Brain",
+  "General Operator Bot"
+]
+

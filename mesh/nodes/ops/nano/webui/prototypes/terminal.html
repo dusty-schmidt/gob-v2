@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GOB • Nano Prototype</title>
+    <style>
+        :root {
+            --bg: #121314;
+            --bg-elev: #18191b;
+            --bg-elev-2: #1f2023;
+            --text: #e7e7e7;
+            --muted: #9aa0a6;
+            --muted-2: #7d8288;
+            --border: #2a2c30;
+            --border-soft: #232529;
+            --accent: #00aaff;
+            --accent-2: #00ff88;
+            --danger: #ff6b6b;
+            --shadow: 0 8px 24px rgba(0,0,0,0.35);
+            --radius: 10px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+            --panel-gap: 10px;
+            --transition: 180ms ease;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; background: var(--bg); color: var(--text); line-height: 1.6; overflow: hidden; }
+        .platform-container { display: flex; flex-direction: column; height: 100vh; background: radial-gradient(1200px 800px at 0% 0%, rgba(0,170,255,0.05), transparent 60%), radial-gradient(900px 700px at 100% 100%, rgba(0,255,136,0.05), transparent 60%), var(--bg); }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); height: 32px; background: linear-gradient(180deg, var(--bg-elev) 0%, var(--bg) 100%); backdrop-filter: saturate(120%); }
+        .status-left { display: flex; align-items: center; gap: 16px; }
+        .status-left span:first-child { position: relative; padding-left: 14px; }
+        .status-left span:first-child::before { content: ""; position: absolute; left: 0; top: 50%; width: 6px; height: 6px; transform: translateY(-50%); border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 0 2px rgba(0,255,136,0.1); }
+        .status-right { display: flex; align-items: center; gap: 12px; }
+        .plugin-system { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); background: var(--bg-elev); border: 1px solid var(--border); padding: 2px 8px; border-radius: var(--radius-xs); }
+        .plugin-weather { color: #88ccff; }
+        .plugin-time { color: #ffaa44; }
+        .content-area { display: flex; flex: 1; overflow: hidden; gap: var(--panel-gap); padding: var(--panel-gap); }
+        .sidebar { width: 280px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; transition: width var(--transition), opacity var(--transition); overflow: hidden; box-shadow: var(--shadow); }
+        .sidebar.collapsed { width: 0; opacity: 0; }
+        .panel { background: var(--bg-elev); border-bottom: 1px solid var(--border-soft); transition: background var(--transition), border-color var(--transition); }
+        .panel:last-child { border-bottom: none; }
+        .panel-header { padding: 12px 16px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: color var(--transition), background var(--transition); }
+        .panel-header:hover { color: var(--text); background: var(--bg-elev-2); }
+        .panel-content { padding: 0 16px 12px; font-size: 13px; color: #d3d7db; }
+        .panel.collapsed .panel-content { display: none; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+        .messages-area { flex: 1; overflow-y: auto; padding: 20px 24px 16px; scroll-behavior: smooth; background: linear-gradient(180deg, var(--bg-elev-2), var(--bg-elev)); }
+        .message { margin-bottom: 10px; opacity: 0; transform: translateY(5px); animation: terminalSlideIn 0.18s ease-out forwards; will-change: transform, opacity; }
+        .message.user { margin-bottom: 12px; }
+        .message.assistant { margin-bottom: 16px; }
+        @keyframes terminalSlideIn { to { opacity: 1; transform: translateY(0); } }
+        .message-line { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.5; }
+        .message-prompt { color: var(--accent-2); flex-shrink: 0; font-weight: 500; }
+        .message.user .message-prompt { color: var(--accent); }
+        .message.assistant .message-prompt { color: var(--danger); }
+        .message-content { color: var(--text); word-wrap: break-word; flex: 1; text-rendering: optimizeLegibility; }
+        .input-area { border-top: 1px solid var(--border); padding: 14px 20px 16px; background: var(--bg-elev); }
+        .input-container { display: flex; align-items: center; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; transition: border-color var(--transition), box-shadow var(--transition), background var(--transition); }
+        .input-container:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--bg-elev); }
+        .input-prompt { color: var(--accent); margin-right: 8px; font-weight: 500; flex-shrink: 0; }
+        .message-input { flex: 1; background: transparent; border: none; color: var(--text); font-family: inherit; font-size: 14px; outline: none; resize: none; min-height: 20px; max-height: 120px; line-height: 1.4; }
+        .message-input::placeholder { color: var(--muted-2); }
+        .send-button { background: transparent; border: none; color: var(--muted-2); cursor: pointer; padding: 4px; margin-left: 8px; transition: color var(--transition), opacity var(--transition), transform var(--transition); font-size: 16px; opacity: 0.5; }
+        .send-button:hover:not(:disabled) { color: var(--accent); opacity: 1; transform: translateY(-1px); }
+        .send-button:disabled { cursor: not-allowed; opacity: 0.35; }
+        .context-indicator { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2); margin-left: 4px; animation: pulse 2s infinite; }
+        .context-indicator.inactive { background: #3a3d42; animation: none; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.5;} }
+        @media (max-width:768px){ .sidebar{ position:absolute; left:-280px; height:100%; z-index:100; background:var(--bg-elev); border-right:1px solid var(--border);} .sidebar.visible{left:0;} .content-area{width:100%;} }
+        ::-webkit-scrollbar{ width:6px; } ::-webkit-scrollbar-track{ background:transparent; } ::-webkit-scrollbar-thumb{ background:#3b3d41; border-radius:3px; } ::-webkit-scrollbar-thumb:hover{ background:#51545a; }
+        @media (prefers-reduced-motion: reduce){ *{ animation:none!important; transition:none!important;} }
+    </style>
+</head>
+<body>
+    <div class="platform-container">
+        <div class="status-bar">
+            <div class="status-left">
+                <span>ready</span>
+                <span class="plugin-time" id="currentTime">14:32</span>
+            </div>
+            <div class="status-right">
+                <span class="plugin-weather">22°C Columbus</span>
+                <span class="plugin-system">nano node</span>
+                <div class="context-indicator" id="contextIndicator"></div>
+            </div>
+        </div>
+        <div class="content-area">
+            <div class="sidebar" id="sidebar">
+                <div class="panel" id="spotifyPanel">
+                    <div class="panel-header">Now Playing <span>♪</span></div>
+                    <div class="panel-content">
+                        <div style="font-size:12px;color:#d3d7db;">No media connected.</div>
+                    </div>
+                </div>
+                <div class="panel" id="systemPanel">
+                    <div class="panel-header">System <span>⚙</span></div>
+                    <div class="panel-content">
+                        <div class="plugin-system">Nano utilities are ready.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-area">
+                <div class="messages-area" id="messagesArea">
+                    <div class="message assistant"><div class="message-line"><span class="message-prompt">></span><div class="message-content">Nano prototype initialized.</div></div></div>
+                </div>
+                <div class="input-area">
+                    <div class="input-container">
+                        <span class="input-prompt">$</span>
+                        <textarea class="message-input" placeholder="Type a command or question..." id="messageInput" rows="1"></textarea>
+                        <button class="send-button" id="sendButton" disabled>📎</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Minimal fetch wrapper with CSRF handling
+        let csrfToken = null;
+        async function getCsrfToken(){ if(csrfToken) return csrfToken; const r = await fetch('/csrf_token',{credentials:'same-origin'}).then(r=>r.json()); csrfToken = r.token; document.cookie = `csrf_token_${r.runtime_id}=${csrfToken}; SameSite=Strict; Path=/`; return csrfToken; }
+        async function fetchApi(url, request){ async function _wrap(retry){ const token = await getCsrfToken(); const req = request||{}; req.headers = req.headers||{}; req.headers['X-CSRF-Token']=token; const resp = await fetch(url, req); if(resp.status===403 && retry){ csrfToken=null; return await _wrap(false);} return resp;} return await _wrap(true); }
+
+        class ModularPlatform {
+            constructor(){
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.messagesArea = document.getElementById('messagesArea');
+                this.context = '';
+                setInterval(()=>{ const now=new Date(); document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'});},1000);
+                this.setup();
+            }
+            setup(){
+                this.messageInput.addEventListener('input', ()=>{ this.autoResize(); this.toggleSendButton(); this.updateContextIndicator(); });
+                this.messageInput.addEventListener('keypress', (e)=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); this.sendMessage(); }});
+                this.sendButton.addEventListener('click', ()=> this.sendMessage());
+            }
+            updateContextIndicator(){ document.getElementById('contextIndicator').classList.toggle('inactive', !this.messageInput.value.trim()); }
+            autoResize(){ this.messageInput.style.height='auto'; this.messageInput.style.height=Math.min(this.messageInput.scrollHeight,120)+'px'; }
+            toggleSendButton(){ const has = this.messageInput.value.trim().length>0; this.sendButton.disabled=!has; this.sendButton.style.opacity = has? '1':'0.3'; }
+            addMessage(content, sender){ const m=document.createElement('div'); m.className=`message ${sender}`; const line=document.createElement('div'); line.className='message-line'; const p=document.createElement('span'); p.className='message-prompt'; p.textContent = sender==='user'? '$': '>'; const c=document.createElement('div'); c.className='message-content'; c.textContent=content; line.appendChild(p); line.appendChild(c); m.appendChild(line); this.messagesArea.appendChild(m); setTimeout(()=>{ this.messagesArea.scrollTop=this.messagesArea.scrollHeight; },50); }
+            #id(){ const s4=()=>Math.floor((1+Math.random())*0x10000).toString(16).substring(1); return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`; }
+            async sendMessage(){ const content=this.messageInput.value.trim(); if(!content) return; this.addMessage(content,'user'); this.messageInput.value=''; this.autoResize(); this.toggleSendButton(); this.updateContextIndicator(); try{ const payload={ text: content, context: this.context, message_id: this.#id() }; const resp=await fetchApi('/message_async',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); const data=await resp.json().catch(()=>null); if(data&&data.context){ this.context=data.context; } const reply=(data&&(data.response||data.text||data.message))?(data.response||data.text||data.message):'Message received.'; this.addMessage(reply,'assistant'); }catch(err){ this.addMessage(`Error: ${err?.message||err}`,'assistant'); } }
+        }
+        document.addEventListener('DOMContentLoaded', ()=>{ window.platform = new ModularPlatform(); });
+    </script>
+    <script src="/js/brand.js" defer></script>
+</body>
+</html>
+
